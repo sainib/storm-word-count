@@ -55,6 +55,57 @@ public class TwitterWordCountTopology {
 	 */
 	public static void main(String[] args) throws AlreadyAliveException, InvalidTopologyException {
 		
+
+        TopologyBuilder builder = new TopologyBuilder();
+
+        System.out.println("HERE - 1 ");
+		String twitterSampleSpoutId = "sample_tweet";
+		int twitterSampleSpoutParallelism = 1;
+		builder.setSpout(twitterSampleSpoutId, new TwitterSampleSpout(), twitterSampleSpoutParallelism);
+		
+		//use SplitTweet Bolt
+		String splitTweetBoltId = "split_tweet";
+		int splitTweetParallelism = 10;
+		builder.setBolt(splitTweetBoltId, new SplitTweet(), splitTweetParallelism)
+				.shuffleGrouping(twitterSampleSpoutId);
+
+		BaseRichBolt countWordBolt = null;
+		countWordBolt = new CountWord();
+		String countWordBoltId = "count_word";
+		int numArgument = 1;
+		int countWordBoltParallelism = 10;
+		builder.setBolt(countWordBoltId, countWordBolt, countWordBoltParallelism)
+				.fieldsGrouping(splitTweetBoltId, new Fields("word","tweetStatus"));
+		System.out.println("HERE - 2 ");
+		//use PrinterCount Bolt to print the result
+		String printerBoltId = "printer_bolt";
+		int printerBoltPar = 10;
+		builder.setBolt(printerBoltId, new PrintCount(), printerBoltPar)
+			.fieldsGrouping(countWordBoltId, new Fields("word","count","tweetStatus"));
+		
+		Config conf = new Config();
+		conf.setDebug(false);
+		System.out.println("HERE - 3 ");
+		if(args != null && args.length > numArgument){
+			System.out.println("HERE - 4 ");
+			conf.setNumWorkers(3);
+			
+			StormSubmitter.submitTopology(args[numArgument], conf, builder.createTopology());
+		}else{
+			System.out.println("HERE - 5 ");
+			conf.setMaxTaskParallelism(3);
+			
+			String topologyName = "word_count_topology";
+			LocalCluster cluster = new LocalCluster();
+			cluster.submitTopology(topologyName , conf, builder.createTopology());
+			
+			Utils.sleep(90*1000);
+			
+			cluster.killTopology(topologyName);
+			cluster.shutdown();			
+		}
+
+        /*		
 		if(args.length < 1 || !ALLOWED_OPTION.containsKey(args[0])){
 			System.out.println("Usage \"TwitterWordCountTopology CountingMode\"");
 			System.out.println("Where CountingMode is: ");
@@ -141,5 +192,7 @@ public class TwitterWordCountTopology {
 			cluster.killTopology(topologyName);
 			cluster.shutdown();			
 		}
+
+		*/
 	}
 }

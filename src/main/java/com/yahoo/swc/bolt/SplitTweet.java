@@ -33,12 +33,12 @@ public class SplitTweet extends BaseRichBolt {
 		String[] words = tweetStatus.split(REGEX_SPLIT);
 		
 		for(String word: words){
-			_outputCollector.emit(new Values(word));
+			_outputCollector.emit(new Values(word, tweetStatus));
 		}
 	}
 
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
-		declarer.declare(new Fields("word"));
+		declarer.declare(new Fields("word","tweetStatus"));
 	}
 
 }

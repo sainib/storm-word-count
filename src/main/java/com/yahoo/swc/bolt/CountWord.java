@@ -33,17 +33,20 @@ public class CountWord extends BaseRichBolt{
 
 	public void execute(Tuple input) {		
 		String word = input.getString(0);
+		String tweetStatus = input.getString(1);
 		MutableInt count = _counter.get(word);
 		if (count == null) {
 			count = new MutableInt();				
 		}
 		count.increment();
 		_counter.put(word, count);
-		_outputCollector.emit(new Values(word, count));
+		if("the".equals(word.toLowerCase())||"usa".equals(word.toLowerCase())||"isis".equals(word.toLowerCase())||"cloud".equals(word.toLowerCase())){
+			_outputCollector.emit(new Values(word, count, tweetStatus));
+		}
 	}
 
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
-		declarer.declare(new Fields("word", "count"));
+		declarer.declare(new Fields("word", "count","tweetStatus"));
 	}
 
 }
